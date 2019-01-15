@@ -19,11 +19,7 @@ class _Lazy {
   }
 
   valueOf() {
-    const result = [];
-    for (const i of this.iterator) {
-      result.push(i);
-    }
-    return result;
+    return [...this.iterator]
   }
 }
 
