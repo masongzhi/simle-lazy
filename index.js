@@ -1,40 +1,78 @@
-import Wrapper from "./wrapper";
-
-function Lazy(data) {
-  if (!(data instanceof Array)) {
-    throw new TypeError("not a array");
+class _Lazy {
+  constructor(data) {
+    this.iterator = initIterator(data);
   }
-  this.data = data;
-  this.sequenceList = [];
-  this.length = 0;
+
+  map(...args) {
+    this.iterator = map(this.iterator, ...args);
+    return this;
+  }
+
+  filter(...args) {
+    this.iterator = filter(this.iterator, ...args);
+    return this;
+  }
+
+  take(...args) {
+    this.iterator = take(this.iterator, ...args);
+    return this;
+  }
+
+  valueOf() {
+    const result = [];
+    for (const i of this.iterator) {
+      result.push(i);
+    }
+    return result;
+  }
 }
 
-Lazy.prototype.filter = function(filter) {
-  const self = this;
-  this.sequenceList.push(
-    new Wrapper({
-      prevWrapper: self.sequenceList.pop(),
-      value: filter,
-      type: "filter",
-    })
-  );
-  this.length++;
-  return this;
-};
+function* initIterator(arr) {
+  for (const i of arr) {
+    yield i;
+  }
+}
 
-Lazy.prototype.take = function(n) {
-  const self = this;
-  this.sequenceList.push(
-    new Wrapper({
-      prevWrapper: self.sequenceList.pop(),
-      value: n,
-      type: "take",
-    })
-  );
-  this.length++;
-  return this;
-};
+function* map(flow, mapFn) {
+  for (const data of flow) {
+    yield mapFn(data);
+  }
+}
 
-Lazy.prototype.join = function() {
-  const result = this.sequenceList.pop().run(this.data);
-};
+function* filter(flow, filterFn) {
+  for (const data of flow) {
+    if (filterFn(data)) {
+      yield data;
+    }
+  }
+}
+
+function take(flow, number) {
+  let count = 0;
+  const _filter = function() {
+    count++;
+    return count >= number;
+  };
+
+  return stop(flow, _filter);
+}
+
+function* stop(flow, stopFn) {
+  for (const data of flow) {
+    yield data;
+    if (stopFn(data)) {
+      break;
+    }
+  }
+}
+
+function Lazy(...args) {
+  return new _Lazy(...args);
+}
+
+const result = Lazy([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+  .map(it => it * 2)
+  .filter(it => it > 6)
+  .take(3)
+  .valueOf();
+console.log("result===>>>>", result);
